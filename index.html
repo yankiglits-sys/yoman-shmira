@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>יומן שמירה</title>
+<meta name="theme-color" content="#5B3A1E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="יומן שמירה">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root {
+  --primary: #5B3A1E; --primary-light: #F1E3C9; --bg: #F6EFE3; --card: #FFFDF8;
+  --text: #2B1D12; --muted: #85725F; --green: #2E7D32; --red: #C0392B; --sat: #EFE4D2;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+button { font: inherit; border: 0; cursor: pointer; }
+header { position: sticky; top: 0; z-index: 5; background: var(--primary); color: #fff;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px; display: flex; align-items: center; gap: 8px; }
+header h1 { margin: 0; font-size: 22px; flex: 1; }
+.hb { background: rgba(255,255,255,.2); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 700; }
+.hb.solid { background: #fff; color: var(--primary); }
+main { padding: 0 0 calc(env(safe-area-inset-bottom) + 24px); max-width: 640px; margin: 0 auto; }
+.card { background: var(--card); margin: 10px 12px 4px; border-radius: 16px; padding: 14px;
+  box-shadow: 0 1px 3px rgba(60,40,20,.12); }
+.nav { display: flex; align-items: center; }
+.nav .t { flex: 1; text-align: center; }
+.nav .t b { display: block; font-size: 20px; }
+.nav .t span { color: var(--primary); font-size: 15px; }
+.arrow { background: var(--primary-light); color: var(--primary); padding: 8px 16px; border-radius: 12px; font-size: 16px; }
+.wk, .row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wk { margin: 12px 0 4px; color: var(--muted); font-weight: 700; text-align: center; font-size: 14px; }
+.cell { height: 64px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; line-height: 1.15; }
+.cell.sat { background: var(--sat); }
+.cell.today { box-shadow: inset 0 0 0 2px var(--primary); }
+.cell.sel { background: var(--primary); color: #fff; }
+.cell .g { font-weight: 700; font-size: 17px; }
+.cell .h { font-size: 12px; color: var(--muted); }
+.cell .m { font-size: 11px; font-weight: 700; color: var(--green); direction: ltr; min-height: 13px; }
+.cell .m.run { color: var(--red); }
+.cell.sel .h, .cell.sel .m { color: #fff; }
+.total { text-align: center; font-weight: 700; margin-top: 10px; }
+.d1 { font-size: 18px; font-weight: 700; }
+.d2 { font-size: 16px; color: var(--primary); }
+.timer { font-size: 52px; font-weight: 300; text-align: center; direction: ltr; margin: 10px 0 8px;
+  font-variant-numeric: tabular-nums; }
+.timer.run { color: var(--red); }
+.big { width: 100%; padding: 16px; border-radius: 12px; font-size: 22px; font-weight: 700; color: #fff; background: var(--green); }
+.big.stop { background: var(--red); }
+.else { color: var(--red); text-align: center; font-size: 14px; margin-top: 8px; }
+.daytot { font-size: 17px; font-weight: 700; margin: 14px 0 6px; }
+.sess { display: flex; align-items: center; gap: 8px; background: #F8F1E4; border-radius: 8px; padding: 10px; margin-top: 4px; }
+.sess .w { flex: 1; }
+.sess .dur { color: var(--green); font-weight: 700; }
+.sess.clash { background: #FCE8E6; box-shadow: inset 0 0 0 1px var(--red); }
+.sess.clash .w { color: var(--red); font-weight: 700; }
+.x { background: none; color: var(--muted); font-size: 18px; padding: 0 4px; }
+.outline { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--card);
+  color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); font-weight: 700; font-size: 15px; }
+.empty { color: var(--muted); padding: 4px; }
+/* dialogs */
+.ov { position: fixed; inset: 0; background: rgba(30,20,10,.45); display: flex; align-items: center;
+  justify-content: center; z-index: 20; padding: 16px; }
+.dlg { background: var(--card); border-radius: 16px; padding: 18px; width: 100%; max-width: 420px;
+  max-height: 90vh; overflow: auto; }
+.dlg h2 { margin: 0 0 12px; font-size: 19px; }
+.dlg label { display: block; font-weight: 700; margin-top: 10px; }
+.dlg input[type=time], .dlg input[type=date] { width: 100%; font-size: 18px; padding: 10px; margin-top: 4px;
+  border: 1px solid #D8C6A8; border-radius: 10px; background: #fff; color: var(--text); }
+.dlg .chk { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+.dlg .btns { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.dlg .btns button { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; background: var(--primary-light); color: var(--primary); }
+.dlg .btns button.main { background: var(--primary); color: #fff; }
+.dlg .info { margin-top: 10px; font-weight: 700; }
+.dlg .menu button { display: block; width: 100%; text-align: right; padding: 14px 6px; background: none;
+  border-bottom: 1px solid #EFE4D2; font-size: 17px; color: var(--text); }
+.toast { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 24px); left: 50%; transform: translateX(-50%);
+  background: #2B1D12; color: #fff; padding: 10px 16px; border-radius: 20px; z-index: 30; max-width: 90%; text-align: center; }
+/* printable report (PDF) */
+#report { display: none; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; }
+  header, main, .ov, .toast { display: none !important; }
+  #report { display: block; color: #000; }
+  #report h1 { color: #5B3A1E; text-align: center; margin: 0 0 4px; font-size: 22px; }
+  #report .sub { text-align: center; color: #333; font-size: 12px; margin: 2px 0; }
+  #report table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+  #report th { background: #5B3A1E; color: #fff; padding: 6px 3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #report td { text-align: center; padding: 5px 3px; border-bottom: 1px solid #DCCBB0; white-space: pre-line; }
+  #report tr:nth-child(even) td { background: #F8F1E4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #report tr.tot td { background: #EBD9BA; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #report .warn { color: #C0392B; font-size: 12px; margin-top: 6px; }
+  #report td.r { direction: ltr; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">יומן שמירה</h1>
+  <button class="hb" id="todayBtn">היום</button>
+  <button class="hb solid" id="exportBtn">ייצוא</button>
+</header>
+<main>
+  <section class="card">
+    <div class="nav">
+      <button class="arrow" id="prev">▶</button>
+      <div class="t"><b id="mTitle"></b><span id="mHeb"></span></div>
+      <button class="arrow" id="next">◀</button>
+    </div>
+    <div class="wk"><div>א׳</div><div>ב׳</div><div>ג׳</div><div>ד׳</div><div>ה׳</div><div>ו׳</div><div>ש׳</div></div>
+    <div id="grid"></div>
+    <div class="total" id="mTotal"></div>
+  </section>
+  <section class="card">
+    <div class="d1" id="d1"></div>
+    <div class="d2" id="d2"></div>
+    <div class="timer" id="timer">00:00:00</div>
+    <button class="big" id="startStop">▶ התחל</button>
+    <div class="else" id="elseText" hidden></div>
+    <div class="daytot" id="dayTot"></div>
+    <div id="list"></div>
+    <button class="outline" id="addBtn">+ הוספת זמן ידנית</button>
+  </section>
+</main>
+<div id="report"></div>
+<script>
+'use strict';
+// ------------------------------------------------------------------ dates (keys are yyyymmdd numbers)
+const GREG = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const WD = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const pad = n => String(n).padStart(2, '0');
+const key = (y, m, d) => y * 10000 + m * 100 + d;
+const keyOf = dt => key(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+const dateOf = k => new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100, 12);
+const today = () => keyOf(new Date());
+const addDays = (k, n) => { const d = dateOf(k); d.setDate(d.getDate() + n); return keyOf(d); };
+const lastDay = (y, m) => key(y, m, new Date(y, m, 0).getDate());
+const gregShort = k => `${pad(k % 100)}/${pad(Math.floor(k / 100) % 100)}/${Math.floor(k / 10000)}`;
+const gregLong = k => `${k % 100} ב${GREG[Math.floor(k / 100) % 100 - 1]} ${Math.floor(k / 10000)}`;
+const weekday = k => WD[dateOf(k).getDay()];
+
+const HEB = new Intl.DateTimeFormat('he-u-ca-hebrew', {day: 'numeric', month: 'long', year: 'numeric'});
+function hebParts(k) {
+  const p = HEB.formatToParts(dateOf(k));
+  const get = t => (p.find(x => x.type === t) || {}).value;
+  return {d: parseInt(get('day'), 10), m: get('month'), y: parseInt(get('year'), 10)};
+}
+function gem(n) {   // Hebrew numerals with geresh / gershayim; 15 = ט״ו, 16 = ט״ז
+  const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const hund = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+  let s = hund[Math.floor(n / 100)];
+  const r = n % 100;
+  s += r === 15 ? 'טו' : r === 16 ? 'טז' : tens[Math.floor(r / 10)] + ones[r % 10];
+  return s.length === 1 ? s + '׳' : s.slice(0, -1) + '״' + s.slice(-1);
+}
+const hebDay = k => gem(hebParts(k).d);
+const hebFull = k => { const h = hebParts(k); return `${gem(h.d)} ${h.m} ${gem(h.y % 1000)}`; };
+function hebMonthRange(y, m) {
+  const a = hebParts(key(y, m, 1)), b = hebParts(lastDay(y, m));
+  if (a.y === b.y && a.m === b.m) return `${a.m} ${gem(a.y % 1000)}`;
+  if (a.y === b.y) return `${a.m} – ${b.m} ${gem(b.y % 1000)}`;
+  return `${a.m} ${gem(a.y % 1000)} – ${b.m} ${gem(b.y % 1000)}`;
+}
+const minutes = ms => Math.round(ms / 60000);
+const hm = min => `${Math.floor(min / 60)}:${pad(min % 60)}`;
+const hms = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+const clock = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const times = n => n === 1 ? 'פעם אחת' : `${n} פעמים`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+// ------------------------------------------------------------------ storage (only on this phone)
+const LS = 'yomanShmira.v1';
+let store = {sessions: [], run: null};
+try { store = Object.assign(store, JSON.parse(localStorage.getItem(LS) || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch (e) { toast('השמירה בטלפון נכשלה'); } };
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const sessionsOf = day => store.sessions.filter(s => s.day === day)
+  .sort((a, b) => (a.start === 0) - (b.start === 0) || a.start - b.start);
+const inRange = (from, to) => store.sessions.filter(s => s.day >= from && s.day <= to);
+
+/** "08:00 – 12:30", manual "(ידני)", old duration-only entries "ידני 2:30", running "08:00 – עכשיו" */
+function range(s) {
+  if (s.manual && !s.start) return `ידני ${hm(minutes(s.dur))}`;
+  return `${clock(s.start)} – ${s.running ? 'עכשיו' : clock(s.start + s.dur)}` + (s.manual ? ' (ידני)' : '');
+}
+/** ids of entries whose hours overlap another entry (a running one lasts until now) */
+function overlaps(list) {
+  const l = list.filter(s => s.start > 0).sort((a, b) => a.start - b.start);
+  const out = new Set();
+  let maxEnd = -Infinity, maxId = null;
+  for (const s of l) {
+    const end = s.running ? Math.max(Date.now(), s.start) : s.start + s.dur;
+    if (maxId !== null && s.start < maxEnd) { out.add(s.id); out.add(maxId); }
+    if (end > maxEnd) { maxEnd = end; maxId = s.id; }
+  }
+  return out;
+}
+function runAsSession() {
+  return store.run ? {id: store.run.id, day: store.run.day, start: store.run.start, dur: 0, running: true} : null;
+}
+function around(day) {
+  const l = inRange(addDays(day, -1), addDays(day, 1));
+  const r = runAsSession();
+  if (r) l.push(r);
+  return l;
+}
+
+// ------------------------------------------------------------------ UI
+const $ = id => document.getElementById(id);
+let t0 = today(), viewY = Math.floor(t0 / 10000), viewM = Math.floor(t0 / 100) % 100, sel = t0;
+
+function toast(msg) {
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3200);
+}
+
+function dialog(html, onReady) {
+  const ov = document.createElement('div');
+  ov.className = 'ov';
+  ov.innerHTML = `<div class="dlg">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  if (onReady) onReady(ov.firstChild, close);
+  return close;
+}
+function confirmDlg(title, text, okText, ok) {
+  dialog(`<h2>${title}</h2><div style="white-space:pre-line">${esc(text)}</div>
+    <div class="btns"><button class="main" data-ok>${okText}</button><button data-no>ביטול</button></div>`, (d, close) => {
+    d.querySelector('[data-ok]').onclick = () => { close(); ok(); };
+    d.querySelector('[data-no]').onclick = close;
+  });
+}
+
+function renderCalendar() {
+  $('mTitle').textContent = `${GREG[viewM - 1]} ${viewY}`;
+  $('mHeb').textContent = hebMonthRange(viewY, viewM);
+  const k1 = key(viewY, viewM, 1), kN = lastDay(viewY, viewM);
+  const tot = {};
+  for (const s of inRange(k1, kN)) tot[s.day] = (tot[s.day] || 0) + s.dur;
+  const monthMin = Object.values(tot).reduce((a, ms) => a + minutes(ms), 0);
+  $('mTotal').textContent = monthMin > 0 ? `סה״כ בחודש: ${hm(monthMin)} שעות (${monthMin} דקות)` : 'אין עדיין זמן רשום בחודש הזה';
+  const offset = new Date(viewY, viewM - 1, 1).getDay();
+  const days = kN % 100, cells = Math.ceil((offset + days) / 7) * 7, tk = today();
+  let html = '';
+  for (let i = 0; i < cells; i++) {
+    if (i % 7 === 0) html += '<div class="row">';
+    const d = i - offset + 1;
+    if (d < 1 || d > days) html += '<div></div>';
+    else {
+      const k = key(viewY, viewM, d), min = tot[k] ? minutes(tot[k]) : 0, run = store.run && store.run.day === k;
+      const cls = ['cell', i % 7 === 6 ? 'sat' : '', k === tk ? 'today' : '', k === sel ? 'sel' : ''].join(' ');
+      html += `<div class="${cls}" data-k="${k}"><div class="g">${d}</div><div class="h">${hebDay(k)}</div>` +
+        `<div class="m ${run ? 'run' : ''}">${run ? '● ' : ''}${min > 0 ? hm(min) : ''}</div></div>`;
+    }
+    if (i % 7 === 6) html += '</div>';
+  }
+  $('grid').innerHTML = html;
+}
+
+function renderDay() {
+  $('d1').textContent = `יום ${weekday(sel)} · ${gregLong(sel)}`;
+  $('d2').textContent = hebFull(sel);
+  const list = sessionsOf(sel), clash = overlaps(around(sel));
+  let sum = 0, html = '';
+  for (const s of list) {
+    sum += s.dur;
+    const c = clash.has(s.id);
+    html += `<div class="sess ${c ? 'clash' : ''}"><div class="w">${esc(range(s))}${c ? '  ⚠ חופף' : ''}</div>` +
+      `<div class="dur">${hm(minutes(s.dur))} שעות</div><button class="x" data-del="${s.id}" aria-label="מחיקה">✕</button></div>`;
+  }
+  if (!list.length) html = '<div class="empty">אין רישומים ביום הזה</div>';
+  $('list').innerHTML = html;
+  const min = minutes(sum);
+  $('dayTot').textContent = `סה״כ ביום: ${hm(min)} שעות (${min} דקות)` + (list.length ? ` · ${times(list.length)}` : '');
+  tick();
+}
+
+function tick() {
+  const r = store.run, now = Date.now(), b = $('startStop'), t = $('timer');
+  if (!r) {
+    t.textContent = '00:00:00'; t.classList.remove('run');
+    b.textContent = '▶ התחל'; b.classList.remove('stop'); $('elseText').hidden = true;
+  } else if (r.day === sel) {
+    t.textContent = hms(now - r.start); t.classList.add('run');
+    b.textContent = '■ עצור'; b.classList.add('stop'); $('elseText').hidden = true;
+  } else {
+    t.textContent = '00:00:00'; t.classList.remove('run');
+    b.textContent = '■ עצור את הסטופר הפעיל'; b.classList.add('stop');
+    $('elseText').textContent = `סטופר רץ כעת על ${gregShort(r.day)} (${hebFull(r.day)}) · ${hms(now - r.start)}`;
+    $('elseText').hidden = false;
+  }
+}
+const renderAll = () => { renderCalendar(); renderDay(); };
+
+$('grid').addEventListener('click', e => {
+  const c = e.target.closest('[data-k]');
+  if (!c) return;
+  sel = +c.dataset.k;
+  renderAll();
+});
+$('prev').onclick = () => { if (--viewM < 1) { viewM = 12; viewY--; } renderCalendar(); };
+$('next').onclick = () => { if (++viewM > 12) { viewM = 1; viewY++; } renderCalendar(); };
+$('todayBtn').onclick = () => { const t = today(); viewY = Math.floor(t / 10000); viewM = Math.floor(t / 100) % 100; sel = t; renderAll(); };
+
+$('startStop').onclick = () => {
+  if (store.run) {
+    const r = store.run, dur = Date.now() - r.start;
+    if (dur >= 1000) store.sessions.push({id: r.id, day: r.day, start: r.start, dur, manual: false});
+    store.run = null;
+    save();
+    toast(`נשמר ${hm(minutes(dur))} שעות ל-${gregShort(r.day)}`);
+  } else {
+    store.run = {id: uid(), day: sel, start: Date.now()};
+    save();
+  }
+  renderAll();
+};
+
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]');
+  if (!b) return;
+  const s = store.sessions.find(x => x.id === b.dataset.del);
+  if (!s) return;
+  confirmDlg('מחיקת רישום', `למחוק את "${range(s)}" (${hm(minutes(s.dur))})?`, 'מחק', () => {
+    store.sessions = store.sessions.filter(x => x.id !== s.id);
+    save();
+    renderAll();
+  });
+});
+
+// ---- manual entry: from–to
+let manFrom = '08:00', manTo = '09:00';
+$('addBtn').onclick = () => {
+  dialog(`<h2>הוספת שעות ל-${gregShort(sel)}</h2>
+    <label>משעה<input type="time" id="mf" value="${manFrom}"></label>
+    <label>עד שעה<input type="time" id="mt" value="${manTo}"></label>
+    <div class="info" id="mi"></div>
+    <div class="btns"><button class="main" id="mok">הוסף</button><button id="mno">ביטול</button></div>`, (d, close) => {
+    const len = () => {
+      const [fh, fm] = d.querySelector('#mf').value.split(':').map(Number), [th, tm] = d.querySelector('#mt').value.split(':').map(Number);
+      let l = th * 60 + tm - (fh * 60 + fm);
+      const next = l <= 0;
+      if (next) l += 1440;
+      return {fh, fm, l, next};
+    };
+    const upd = () => { const x = len(); d.querySelector('#mi').textContent = `משך: ${hm(x.l)} שעות${x.next ? '  (נגמר למחרת)' : ''}`; };
+    d.querySelector('#mf').oninput = upd;
+    d.querySelector('#mt').oninput = upd;
+    upd();
+    d.querySelector('#mno').onclick = close;
+    d.querySelector('#mok').onclick = () => {
+      const x = len();
+      if (isNaN(x.l)) return;
+      manFrom = d.querySelector('#mf').value; manTo = d.querySelector('#mt').value;
+      const st = dateOf(sel); st.setHours(x.fh, x.fm, 0, 0);
+      const start = st.getTime(), dur = x.l * 60000, day = sel;
+      const hits = around(day).filter(s => s.start > 0 && s.start < start + dur && start < (s.running ? Date.now() : s.start + s.dur));
+      const add = () => { store.sessions.push({id: uid(), day, start, dur, manual: true}); save(); renderAll(); };
+      close();
+      if (!hits.length) add();
+      else confirmDlg('⚠ התנגשות בשעות', `השעות ${manFrom} – ${manTo} חופפות ל:\n${hits.map(range).join('\n')}`, 'הוסף בכל זאת', add);
+    };
+  });
+};
+
+// ------------------------------------------------------------------ report rows
+function rows(from, to, includeEmpty) {
+  const all = inRange(from, to), clash = overlaps(store.sessions), out = [];
+  for (let k = from; k <= to; k = addDays(k, 1)) {
+    const l = all.filter(s => s.day === k).sort((a, b) => (a.start === 0) - (b.start === 0) || a.start - b.start);
+    if (!l.length && !includeEmpty) continue;
+    const ms = l.reduce((a, s) => a + s.dur, 0);
+    out.push({k, min: minutes(ms), count: l.length, clash: l.some(s => clash.has(s.id)),
+      ranges: l.map(s => range(s) + (clash.has(s.id) ? ' ⚠' : ''))});
+  }
+  return out;
+}
+const dec = min => (min / 60).toFixed(2);
+const HEAD = ['תאריך לועזי', 'תאריך עברי', 'יום', 'פעמים', 'ממתי עד מתי', 'דקות', 'שעות (ש:דד)', 'שעות עשרוני'];
+
+// PDF = the phone's print / "save as PDF"
+function printReport(from, to, list) {
+  const t = list.reduce((a, r) => a + r.min, 0), n = list.reduce((a, r) => a + r.count, 0);
+  let h = `<h1>דו״ח שעות</h1><div class="sub">${gregShort(from)} – ${gregShort(to)} · ${hebFull(from)} – ${hebFull(to)}</div>
+    <div class="sub">סה״כ: ${hm(t)} שעות (${t} דקות) · ${n} פעמים</div><table><tr>${HEAD.map(x => `<th>${x}</th>`).join('')}</tr>`;
+  for (const r of list) {
+    h += `<tr><td>${gregShort(r.k)}</td><td>${hebFull(r.k)}</td><td>${weekday(r.k)}</td><td>${r.count || ''}</td>` +
+      `<td class="r">${esc(r.ranges.join('\n'))}</td><td>${r.min}</td><td>${hm(r.min)}</td><td>${dec(r.min)}</td></tr>`;
+  }
+  h += `<tr class="tot"><td>סה״כ</td><td></td><td></td><td>${n}</td><td></td><td>${t}</td><td>${hm(t)}</td><td>${dec(t)}</td></tr></table>`;
+  if (list.some(r => r.clash)) h += '<div class="warn">⚠ = שעות שחופפות לרישום אחר באותו זמן</div>';
+  $('report').innerHTML = h;
+  setTimeout(() => window.print(), 50);
+}
+
+// ---- Excel: a real .xlsx (stored zip) built here, no library
+const CRC = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const size = central.reduce((a, p) => a + p.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, size, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsx(list) {
+  const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n', NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const str = (r, s, st) => `<c r="${r}" t="inlineStr"${st ? ` s="${st}"` : ''}><is><t>${esc(s)}</t></is></c>`;
+  const num = (r, v, st) => `<c r="${r}"${st ? ` s="${st}"` : ''}><v>${v}</v></c>`;
+  const L = 'ABCDEFGH';
+  let sh = `${X}<worksheet xmlns="${NS}"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
+    '<cols><col min="1" max="1" width="12" customWidth="1"/><col min="2" max="2" width="19" customWidth="1"/><col min="3" max="3" width="9" customWidth="1"/><col min="4" max="4" width="8" customWidth="1"/><col min="5" max="5" width="19" customWidth="1"/><col min="6" max="8" width="12" customWidth="1"/></cols><sheetData>';
+  sh += '<row r="1">' + HEAD.map((h, i) => str(L[i] + 1, h, 1)).join('') + '</row>';
+  let r = 2;
+  for (const x of list) {
+    const lines = Math.max(1, x.ranges.length);
+    sh += `<row r="${r}"${lines > 1 ? ` ht="${lines * 15}" customHeight="1"` : ''}>` + str('A' + r, gregShort(x.k)) + str('B' + r, hebFull(x.k)) +
+      str('C' + r, weekday(x.k)) + num('D' + r, x.count) + str('E' + r, x.ranges.join('\n'), 7) + num('F' + r, x.min) +
+      num('G' + r, x.min / 1440, 2) + num('H' + r, dec(x.min), 3) + '</row>';
+    r++;
+  }
+  const last = r - 1, t = list.reduce((a, x) => a + x.min, 0), n = list.reduce((a, x) => a + x.count, 0);
+  const sum = (c, v, st) => last >= 2 ? `<c r="${c}${r}" s="${st}"><f>SUM(${c}2:${c}${last})</f><v>${v}</v></c>` : num(c + r, 0, st);
+  sh += `<row r="${r}">` + str('A' + r, 'סה״כ', 1) + sum('D', n, 6) + sum('F', t, 6) + sum('G', t / 1440, 4) + sum('H', dec(t), 5) + '</row></sheetData></worksheet>';
+  const A = '<alignment vertical="center"/></xf>', XF = '<xf fillId="0" borderId="0" xfId="0" applyAlignment="1" applyNumberFormat="1" applyFont="1" ';
+  const styles = `${X}<styleSheet xmlns="${NS}"><numFmts count="1"><numFmt numFmtId="164" formatCode="[h]:mm"/></numFmts>` +
+    '<fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8">' +
+    XF + 'numFmtId="0" fontId="0">' + A + XF + 'numFmtId="0" fontId="1">' + A + XF + 'numFmtId="164" fontId="0">' + A +
+    XF + 'numFmtId="2" fontId="0">' + A + XF + 'numFmtId="164" fontId="1">' + A + XF + 'numFmtId="2" fontId="1">' + A +
+    XF + 'numFmtId="0" fontId="1">' + A + XF + 'numFmtId="0" fontId="0"><alignment vertical="center" wrapText="1"/></xf></cellXfs></styleSheet>';
+  const R = 'http://schemas.openxmlformats.org/package/2006/relationships', OD = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  return zip([
+    {name: '[Content_Types].xml', data: `${X}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+    {name: '_rels/.rels', data: `${X}<Relationships xmlns="${R}"><Relationship Id="rId1" Type="${OD}/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name: 'xl/workbook.xml', data: `${X}<workbook xmlns="${NS}" xmlns:r="${OD}"><sheets><sheet name="שעות" sheetId="1" r:id="rId1"/></sheets></workbook>`},
+    {name: 'xl/_rels/workbook.xml.rels', data: `${X}<Relationships xmlns="${R}"><Relationship Id="rId1" Type="${OD}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${OD}/styles" Target="styles.xml"/></Relationships>`},
+    {name: 'xl/worksheets/sheet1.xml', data: sh},
+    {name: 'xl/styles.xml', data: styles},
+  ]);
+}
+
+/** Share sheet on the phone (Mail, WhatsApp, Files…) or a normal download. */
+async function deliver(blob, name) {
+  const file = new File([blob], name, {type: blob.type});
+  if (navigator.canShare && navigator.canShare({files: [file]})) {
+    try { await navigator.share({files: [file], title: name}); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+
+const toISO = k => `${Math.floor(k / 10000)}-${pad(Math.floor(k / 100) % 100)}-${pad(k % 100)}`;
+const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return key(y, m, d); };
+
+$('exportBtn').onclick = () => {
+  const t = today();
+  dialog(`<h2>ייצוא שעות</h2>
+    <label>מתאריך<input type="date" id="ef" value="${toISO(key(Math.floor(t / 10000), Math.floor(t / 100) % 100, 1))}"></label>
+    <label>עד תאריך<input type="date" id="et" value="${toISO(t)}"></label>
+    <label class="chk"><input type="checkbox" id="ee" checked> לכלול גם ימים בלי זמן</label>
+    <div class="info" id="es"></div>
+    <div class="btns"><button class="main" id="ep">PDF</button><button class="main" id="ex">Excel</button><button id="ec">סגור</button></div>`, (d, close) => {
+    const get = () => {
+      let f = fromISO(d.querySelector('#ef').value), to = fromISO(d.querySelector('#et').value);
+      if (f > to) [f, to] = [to, f];
+      return {f, to, list: rows(f, to, d.querySelector('#ee').checked)};
+    };
+    const upd = () => {
+      try {
+        const g = get(), l = rows(g.f, g.to, false), m = l.reduce((a, r) => a + r.min, 0);
+        d.querySelector('#es').textContent = `סה״כ בטווח: ${hm(m)} שעות ב-${l.length} ימים, ${l.reduce((a, r) => a + r.count, 0)} פעמים` +
+          (store.run && store.run.day >= g.f && store.run.day <= g.to ? '\nהסטופר עדיין רץ – הזמן הנוכחי לא נכלל' : '');
+      } catch (e) { d.querySelector('#es').textContent = ''; }
+    };
+    d.querySelectorAll('input').forEach(i => i.addEventListener('input', upd));
+    upd();
+    d.querySelector('#ec').onclick = close;
+    d.querySelector('#ep').onclick = () => { const g = get(); close(); printReport(g.f, g.to, g.list); };
+    d.querySelector('#ex').onclick = () => {
+      const g = get();
+      close();
+      deliver(xlsx(g.list), `hours_${gregShort(g.f).replace(/\//g, '-')}_to_${gregShort(g.to).replace(/\//g, '-')}.xlsx`);
+    };
+  });
+};
+
+// ---- backup: everything lives only on this phone, so offer a file copy
+$('title').onclick = () => {
+  dialog(`<h2>יומן שמירה</h2><div class="menu">
+      <button id="bk">שמירת גיבוי לקובץ</button>
+      <button id="rs">שחזור מקובץ גיבוי</button>
+      <button id="cl">סגור</button></div>
+      <div style="color:var(--muted);font-size:13px;margin-top:8px">השעות נשמרות רק בטלפון הזה. מומלץ לשמור גיבוי מדי פעם (למשל לקבצים / iCloud).</div>`, (d, close) => {
+    d.querySelector('#cl').onclick = close;
+    d.querySelector('#bk').onclick = () => {
+      close();
+      deliver(new Blob([JSON.stringify({app: 'yoman-shmira', v: 1, sessions: store.sessions}, null, 1)], {type: 'application/json'}),
+        `yoman-shmira-backup-${toISO(today())}.json`);
+    };
+    d.querySelector('#rs').onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.json,application/json';
+      inp.onchange = async () => {
+        try {
+          const o = JSON.parse(await inp.files[0].text());
+          if (!Array.isArray(o.sessions)) throw 0;
+          const have = new Set(store.sessions.map(s => s.id));
+          let n = 0;
+          for (const s of o.sessions) if (s && s.id && !have.has(s.id) && s.day && s.dur >= 0) { store.sessions.push(s); n++; }
+          save();
+          renderAll();
+          toast(`שוחזרו ${n} רישומים`);
+        } catch (e) { toast('הקובץ אינו גיבוי תקין'); }
+        close();
+      };
+      inp.click();
+    };
+  });
+};
+
+renderAll();
+setInterval(tick, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
